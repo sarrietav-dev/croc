@@ -200,10 +200,18 @@ class DesktopCrocEngine implements CrocEngine {
   }
 
   @override
-  Future<void> shareFile(ReceivedFile file) {
+  Future<void> shareFile(ReceivedFile file) async {
+    if (Platform.isWindows) {
+      await Process.start('explorer.exe', ['/select,${file.path}']);
+      return;
+    }
+    if (Platform.isLinux) {
+      await Process.start('xdg-open', [File(file.path).parent.path]);
+      return;
+    }
     throw PlatformException(
       code: 'unsupported-platform',
-      message: 'Sharing received files is currently available on Android only.',
+      message: 'Opening received files is not supported on this platform.',
     );
   }
 
