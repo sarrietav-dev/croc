@@ -31,6 +31,25 @@ void main() {
     expect(find.text('Receive securely'), findsOneWidget);
   });
 
+  testWidgets('shows a QR code for the generated transfer code', (
+    tester,
+  ) async {
+    final controller = AppController(engine: FakeCrocEngine());
+    await controller.initialize();
+
+    await tester.pumpWidget(CrocApp(controller: controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show QR'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Scan transfer code'), findsOneWidget);
+    expect(find.text('quiet-forest-river'), findsWidgets);
+    expect(
+      find.bySemanticsLabel('QR code for quiet-forest-river'),
+      findsOneWidget,
+    );
+  });
+
   test('decodes progress events from the native bridge', () {
     final event = CrocEvent.fromEncoded(
       '{"type":"progress","name":"photo.jpg","done":512,"total":1024,'

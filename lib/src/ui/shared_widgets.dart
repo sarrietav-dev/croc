@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../app_controller.dart';
 import '../model/transfer_models.dart';
 import 'app_theme.dart';
+import 'qr_code_flow.dart';
 
 class PageFrame extends StatelessWidget {
   const PageFrame({
@@ -142,45 +143,69 @@ class _CodeCardState extends State<CodeCard> {
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2,
               ),
-              decoration: InputDecoration(
-                hintText: 'correct-horse-battery',
-                suffixIcon: widget.receiveMode
-                    ? IconButton(
-                        tooltip: 'Paste code',
-                        onPressed: widget.controller.isBusy
-                            ? null
-                            : () async {
-                                final data = await Clipboard.getData(
-                                  Clipboard.kTextPlain,
-                                );
-                                if (data?.text case final text?) {
-                                  widget.controller.setCode(text);
-                                }
-                              },
-                        icon: const Icon(Icons.content_paste_rounded),
-                      )
-                    : IconButton(
-                        tooltip: 'Copy code',
-                        onPressed: widget.controller.copyCode,
-                        icon: const Icon(Icons.copy_rounded),
-                      ),
-              ),
+              decoration: InputDecoration(hintText: 'correct-horse-battery'),
             ),
-            if (!widget.receiveMode) ...[
-              const SizedBox(height: 10),
-              TextButton.icon(
-                onPressed: widget.controller.isBusy
-                    ? null
-                    : widget.controller.regenerateCode,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Generate another code'),
-              ),
-            ],
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: widget.receiveMode
+                  ? _receiveActions(context)
+                  : _sendActions(context),
+            ),
           ],
         ),
       ),
     );
   }
+
+  List<Widget> _receiveActions(BuildContext context) => [
+    if (cameraQrScanningSupported)
+      TextButton.icon(
+        onPressed: widget.controller.isBusy
+            ? null
+            : () async {
+                final code = await scanTransferQrCode(context);
+                if (code != null) widget.controller.setCode(code);
+              },
+        icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+        label: const Text('Scan QR'),
+      ),
+    TextButton.icon(
+      onPressed: widget.controller.isBusy
+          ? null
+          : () async {
+              final data = await Clipboard.getData(Clipboard.kTextPlain);
+              if (data?.text case final text?) {
+                widget.controller.setCode(text);
+              }
+            },
+      icon: const Icon(Icons.content_paste_rounded, size: 18),
+      label: const Text('Paste code'),
+    ),
+  ];
+
+  List<Widget> _sendActions(BuildContext context) => [
+    TextButton.icon(
+      onPressed: widget.controller.isBusy
+          ? null
+          : () => showTransferQrCode(context, widget.controller.code),
+      icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+      label: const Text('Show QR'),
+    ),
+    TextButton.icon(
+      onPressed: widget.controller.isBusy ? null : widget.controller.copyCode,
+      icon: const Icon(Icons.copy_rounded, size: 18),
+      label: const Text('Copy code'),
+    ),
+    TextButton.icon(
+      onPressed: widget.controller.isBusy
+          ? null
+          : widget.controller.regenerateCode,
+      icon: const Icon(Icons.refresh_rounded, size: 18),
+      label: const Text('New code'),
+    ),
+  ];
 }
 
 class TransferPanel extends StatelessWidget {
