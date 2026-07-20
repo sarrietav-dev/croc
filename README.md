@@ -13,15 +13,20 @@ An Android-first Flutter client for [croc](https://github.com/schollz/croc). It 
 - **Send files** — pick one or several files and share the one-time code
 - **Receive files** — enter a code to receive from Croc CLI or another client
 - **Progress & cancellation** — real-time transfer progress with cooperative cancel
+- **QR transfer codes** - show a scannable code or scan one with the Android camera
 - **Native Android UX** — document picker, save dialog, and share sheet
 - **Custom relay** — configure relay address, ports, and password
-- **Minimal UI** — clean, responsive layout for phone and tablet
+- **Adaptive layout** - bottom navigation on phones, compact navigation in small windows, and a two-column workspace on wide Linux and Windows windows
 
 ## Screenshots
 
 | Send | Receive | Settings |
 |------|---------|----------|
 | ![Send](screenshots/send_view.png) | ![Receive](screenshots/receive_view.png) | ![Settings](screenshots/settings_view.png) |
+
+<p align="center">
+  <img src="screenshots/qr_code.png" width="300" alt="Transfer code QR dialog">
+</p>
 
 ## Architecture
 
@@ -45,6 +50,13 @@ flutter pub get
 flutter build apk
 ```
 
+The Flutter shell also builds for Linux and Windows:
+
+```bash
+flutter build linux
+flutter build windows
+```
+
 The generated `android/app/libs/crocbridge.aar` and sources JAR are intentionally ignored. The build script pins the Go Mobile toolchain for reproducible output.
 
 ## Verify
@@ -64,7 +76,7 @@ CROC_SECRET="your-transfer-code" croc send some-file.txt
 
 ## Platform Scope
 
-The functional native bridge currently targets Android. Other generated Flutter platforms remain in the project for future UI portability, but do not yet include a Croc engine bridge.
+The responsive Flutter interface builds for Android and Linux, with a generated and viewport-tested Windows runner. Camera QR scanning and the functional Croc engine bridge currently target Android. Linux and Windows do not yet include a native transfer engine, but QR display, code entry, settings, and adaptive layouts remain available.
 
 ## Licenses
 
