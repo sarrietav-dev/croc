@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="screenshots/send_view.png" width="240" alt="Send view">
+  <img src="screenshots/send_view.png" width="240" alt="Send files, folders, text, or clipboard content">
   <img src="screenshots/receive_view.png" width="240" alt="Receive view">
   <img src="screenshots/settings_view.png" width="240" alt="Settings view">
 </p>
@@ -10,7 +10,7 @@ A Flutter client for [croc](https://github.com/schollz/croc) on Android, Linux, 
 
 ## Features
 
-- **Send files** — pick one or several files and share the one-time code
+- **Flexible sending** — send files, complete folders, typed text, or clipboard content
 - **Receive files** — enter a code to receive from Croc CLI or another client
 - **Progress & cancellation** — real-time transfer progress with cooperative cancel
 - **QR transfer codes** - show a scannable code or scan one with the Android camera
@@ -26,7 +26,7 @@ A Flutter client for [croc](https://github.com/schollz/croc) on Android, Linux, 
 
 | Send | Receive | Settings |
 |------|---------|----------|
-| ![Send](screenshots/send_view.png) | ![Receive](screenshots/receive_view.png) | ![Settings](screenshots/settings_view.png) |
+| ![Send files, folders, text, or clipboard content](screenshots/send_view.png) | ![Receive](screenshots/receive_view.png) | ![Settings](screenshots/settings_view.png) |
 
 <p align="center">
   <img src="screenshots/qr_code.png" width="300" alt="Transfer code QR dialog">
@@ -35,7 +35,7 @@ A Flutter client for [croc](https://github.com/schollz/croc) on Android, Linux, 
 ### Desktop
 
 <p align="center">
-  <img src="screenshots/desktop_send.png" width="49%" alt="Send files on desktop">
+  <img src="screenshots/desktop_send.png" width="49%" alt="Choose files, folders, text, or clipboard content on desktop">
   <img src="screenshots/desktop_receive.png" width="49%" alt="Receive files on desktop">
 </p>
 
@@ -108,7 +108,7 @@ CROC_SECRET="your-transfer-code" croc send some-file.txt
 
 ## Platform Scope
 
-Encrypted sending and receiving are supported on Android, Linux, Windows, and web. Web transfers require the included trusted bridge and support browser file selection, camera QR scanning, cancellation, and downloads. Native Android transfers are end-to-end encrypted from the device; web transfers are HTTPS-protected between browser and bridge, then end-to-end encrypted by Croc from the bridge to the peer. Linux builds are verified locally, while the Windows helper is cross-compiled and the Windows UI is viewport-tested because Windows Flutter binaries must be assembled on a Windows host.
+Encrypted sending and receiving are supported on Android, Linux, Windows, and web. Web transfers require the included trusted bridge and support browser file and folder selection, text and clipboard sending, camera QR scanning, cancellation, and downloads. Native Android transfers are end-to-end encrypted from the device; web transfers are HTTPS-protected between browser and bridge, then end-to-end encrypted by Croc from the bridge to the peer. Linux builds are verified locally, while the Windows helper is cross-compiled and the Windows UI is viewport-tested because Windows Flutter binaries must be assembled on a Windows host.
 
 ## Licenses
 
