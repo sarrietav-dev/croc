@@ -21,12 +21,21 @@ A Flutter client for [croc](https://github.com/schollz/croc) on Android, Linux, 
 
 ## Screenshots
 
+### Mobile
+
 | Send | Receive | Settings |
 |------|---------|----------|
 | ![Send](screenshots/send_view.png) | ![Receive](screenshots/receive_view.png) | ![Settings](screenshots/settings_view.png) |
 
 <p align="center">
   <img src="screenshots/qr_code.png" width="300" alt="Transfer code QR dialog">
+</p>
+
+### Desktop
+
+<p align="center">
+  <img src="screenshots/desktop_send.png" width="49%" alt="Send files on desktop">
+  <img src="screenshots/desktop_receive.png" width="49%" alt="Receive files on desktop">
 </p>
 
 ## Architecture
