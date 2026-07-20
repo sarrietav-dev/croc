@@ -94,6 +94,12 @@ void main() {
     expect(formatBytes(1536), '1.50 KB');
     expect(formatBytes(5 * 1024 * 1024), '5.00 MB');
   });
+
+  test('desktop engine generates transferable codes locally', () async {
+    final code = await DesktopCrocEngine().generateCode();
+
+    expect(code, matches(RegExp(r'^[0-9a-f]{4}(-[0-9a-f]{4}){3}$')));
+  });
 }
 
 void setTestWindowSize(WidgetTester tester, Size size) {

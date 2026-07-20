@@ -11,7 +11,9 @@ import 'services/settings_store.dart';
 
 class AppController extends ChangeNotifier {
   AppController({CrocEngine? engine, SettingsStore? settingsStore})
-    : _engine = engine ?? NativeCrocEngine(),
+    : _engine =
+          engine ??
+          (Platform.isAndroid ? NativeCrocEngine() : DesktopCrocEngine()),
       _settingsStore = settingsStore ?? SettingsStore();
 
   final CrocEngine _engine;

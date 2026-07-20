@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 
 import '../model/transfer_models.dart';
@@ -115,6 +118,78 @@ class NativeCrocEngine implements CrocEngine {
     'relayPorts': relay.ports,
     'relayPassword': relay.password,
   };
+}
+
+class DesktopCrocEngine implements CrocEngine {
+  static const _unsupportedMessage =
+      'Encrypted transfers are currently available on Android only.';
+
+  @override
+  Stream<CrocEvent> get events => const Stream.empty();
+
+  @override
+  Future<String> generateCode() async {
+    final random = Random.secure();
+    final bytes = List.generate(8, (_) => random.nextInt(256));
+    final encoded = bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+    return List.generate(
+      4,
+      (index) => encoded.substring(index * 4, index * 4 + 4),
+    ).join('-');
+  }
+
+  @override
+  Future<List<SelectedFile>> pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result == null) return const [];
+    return result.files
+        .where((file) => file.path != null)
+        .map(
+          (file) =>
+              SelectedFile(name: file.name, path: file.path!, size: file.size),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> send({
+    required String code,
+    required List<String> paths,
+    required RelaySettings relay,
+  }) => _unsupported();
+
+  @override
+  Future<void> receive({
+    required String code,
+    required String stagingDirectory,
+    required RelaySettings relay,
+  }) => _unsupported();
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<bool> saveFile(ReceivedFile file) async {
+    final bytes = await File(file.path).readAsBytes();
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save ${file.name}',
+      fileName: file.name,
+      bytes: bytes,
+    );
+    return path != null;
+  }
+
+  @override
+  Future<void> shareFile(ReceivedFile file) => _unsupported();
+
+  Future<Never> _unsupported() {
+    throw PlatformException(
+      code: 'unsupported-platform',
+      message: _unsupportedMessage,
+    );
+  }
 }
 
 class CrocEvent {
