@@ -1,5 +1,5 @@
 name: croc
-description: "Encrypted Croc file transfers for Android, Linux, and Windows."
+description: "Encrypted Croc file transfers for Android, Linux, Windows, and web."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   file_picker: ^10.3.10
+  http: ^1.5.0
   mobile_scanner: ^7.1.3
   path_provider: ^2.1.6
   qr_flutter: ^4.1.0

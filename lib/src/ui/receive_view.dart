@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_controller.dart';
@@ -156,10 +155,16 @@ class _ReceivedFiles extends StatelessWidget {
                       icon: const Icon(Icons.download_rounded),
                     ),
                     IconButton(
-                      tooltip: Platform.isAndroid ? 'Share' : 'Show in folder',
+                      tooltip: kIsWeb
+                          ? 'Download again'
+                          : defaultTargetPlatform == TargetPlatform.android
+                          ? 'Share'
+                          : 'Show in folder',
                       onPressed: () => controller.shareFile(file),
                       icon: Icon(
-                        Platform.isAndroid
+                        kIsWeb
+                            ? Icons.download_rounded
+                            : defaultTargetPlatform == TargetPlatform.android
                             ? Icons.ios_share_rounded
                             : Icons.folder_open_rounded,
                       ),

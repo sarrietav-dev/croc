@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -339,15 +340,17 @@ class PrivacyNote extends StatelessWidget {
         color: const Color(0xFFE7EBE4),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.shield_outlined, color: CrocColors.forest, size: 21),
-          SizedBox(width: 12),
+          const Icon(Icons.shield_outlined, color: CrocColors.forest, size: 21),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'The relay connects both devices, but your files are encrypted before they leave this device.',
-              style: TextStyle(
+              kIsWeb
+                  ? 'Files are sent over HTTPS to your trusted web bridge, which performs the encrypted Croc transfer.'
+                  : 'The relay connects both devices, but your files are encrypted before they leave this device.',
+              style: const TextStyle(
                 color: CrocColors.forest,
                 fontSize: 13,
                 height: 1.45,

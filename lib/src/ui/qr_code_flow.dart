@@ -4,7 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 bool get cameraQrScanningSupported =>
-    defaultTargetPlatform == TargetPlatform.android;
+    kIsWeb || defaultTargetPlatform == TargetPlatform.android;
 
 Future<void> showTransferQrCode(BuildContext context, String code) {
   return showDialog<void>(

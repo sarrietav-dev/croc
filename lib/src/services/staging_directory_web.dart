@@ -1,0 +1,1 @@
+Future<String> createPlatformStagingDirectory() async => '';

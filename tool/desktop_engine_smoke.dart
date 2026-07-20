@@ -1,5 +1,5 @@
 import 'package:croc/src/model/transfer_models.dart';
-import 'package:croc/src/services/croc_engine.dart';
+import 'package:croc/src/services/desktop_croc_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:croc/src/app_controller.dart';
 import 'package:croc/src/model/transfer_models.dart';
 import 'package:croc/src/services/croc_engine.dart';
+import 'package:croc/src/services/desktop_croc_engine.dart';
 import 'package:croc/src/ui/croc_app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

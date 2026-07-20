@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_controller.dart';
@@ -167,9 +168,11 @@ class _DesktopNavigation extends StatelessWidget {
           _SecureBadge(compact: compact),
           if (!compact) ...[
             const SizedBox(height: 16),
-            const Text(
-              'Your files stay encrypted from this device to the other one.',
-              style: TextStyle(
+            Text(
+              kIsWeb
+                  ? 'Use a bridge you trust. HTTPS protects files in transit to it.'
+                  : 'Your files stay encrypted from this device to the other one.',
+              style: const TextStyle(
                 color: Color(0xFFAFC4B9),
                 fontSize: 12,
                 height: 1.5,
@@ -268,12 +271,12 @@ class _SecureBadge extends StatelessWidget {
           ),
           if (!compact) ...[
             const SizedBox(width: 7),
-            const Flexible(
+            Flexible(
               child: Text(
-                'End-to-end encrypted',
+                kIsWeb ? 'Secure web bridge' : 'End-to-end encrypted',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,

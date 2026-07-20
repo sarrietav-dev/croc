@@ -1,19 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'model/transfer_models.dart';
 import 'services/croc_engine.dart';
+import 'services/engine_factory.dart';
 import 'services/settings_store.dart';
+import 'services/staging_directory.dart';
 
 class AppController extends ChangeNotifier {
   AppController({CrocEngine? engine, SettingsStore? settingsStore})
-    : _engine =
-          engine ??
-          (Platform.isAndroid ? NativeCrocEngine() : DesktopCrocEngine()),
+    : _engine = engine ?? createDefaultCrocEngine(),
       _settingsStore = settingsStore ?? SettingsStore();
 
   final CrocEngine _engine;
@@ -133,13 +131,9 @@ class AppController extends ChangeNotifier {
     _begin('Finding the sender');
     receivedFiles = [];
     try {
-      final cache = await getTemporaryDirectory();
-      final staging = Directory(
-        '${cache.path}/croc-receive-${DateTime.now().millisecondsSinceEpoch}',
-      );
       await _engine.receive(
         code: code,
-        stagingDirectory: staging.path,
+        stagingDirectory: await createStagingDirectory(),
         relay: relay,
       );
     } catch (error) {

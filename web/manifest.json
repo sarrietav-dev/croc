@@ -1,12 +1,11 @@
 {
-    "name": "croc",
-    "short_name": "croc",
+    "name": "Croc secure file transfer",
+    "short_name": "Croc",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#F7F4EA",
+    "theme_color": "#153D2E",
+    "description": "Send and receive files securely with Croc.",
     "prefer_related_applications": false,
     "icons": [
         {
