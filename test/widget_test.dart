@@ -26,12 +26,35 @@ void main() {
 
     expect(find.text('Send files'), findsOneWidget);
     expect(find.text('Send securely'), findsOneWidget);
+    expect(find.text('File'), findsOneWidget);
+    expect(find.text('Folder'), findsOneWidget);
+    expect(find.text('Text'), findsOneWidget);
+    expect(find.text('Paste'), findsOneWidget);
 
     await tester.tap(find.text('Receive'));
     await tester.pumpAndSettle();
 
     expect(find.text('Receive files'), findsOneWidget);
     expect(find.text('Receive securely'), findsOneWidget);
+  });
+
+  testWidgets('adds typed text to the selected transfer entries', (
+    tester,
+  ) async {
+    setTestWindowSize(tester, const Size(560, 900));
+    final controller = AppController(engine: FakeCrocEngine());
+    await controller.initialize();
+    await tester.pumpWidget(CrocApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Text'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Hello from Croc');
+    await tester.tap(find.text('Add text'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('text.txt'), findsOneWidget);
+    expect(controller.selectedFiles.single.size, 15);
   });
 
   testWidgets('shows a QR code for the generated transfer code', (
@@ -121,6 +144,16 @@ class FakeCrocEngine implements CrocEngine {
 
   @override
   Future<List<SelectedFile>> pickFiles() async => const [];
+
+  @override
+  Future<List<SelectedFile>> pickFolder() async => const [];
+
+  @override
+  Future<SelectedFile> createTextFile(
+    String text, {
+    required String name,
+  }) async =>
+      SelectedFile(name: name, path: 'memory://$name', size: text.length);
 
   @override
   Future<String> generateCode() async => 'quiet-forest-river';

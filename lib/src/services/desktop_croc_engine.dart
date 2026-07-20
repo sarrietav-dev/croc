@@ -46,6 +46,42 @@ class DesktopCrocEngine implements CrocEngine {
   }
 
   @override
+  Future<List<SelectedFile>> pickFolder() async {
+    final path = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Choose a folder',
+      lockParentWindow: true,
+    );
+    if (path == null) return const [];
+    final directory = Directory(path);
+    var size = 0;
+    await for (final entity in directory.list(recursive: true)) {
+      if (entity is File) size += await entity.length();
+    }
+    return [
+      SelectedFile(
+        name:
+            directory.uri.pathSegments
+                .where((part) => part.isNotEmpty)
+                .lastOrNull ??
+            path,
+        path: path,
+        size: size,
+      ),
+    ];
+  }
+
+  @override
+  Future<SelectedFile> createTextFile(
+    String text, {
+    required String name,
+  }) async {
+    final directory = await Directory.systemTemp.createTemp('croc-text-');
+    final file = File('${directory.path}${Platform.pathSeparator}$name');
+    await file.writeAsString(text, flush: true);
+    return SelectedFile(name: name, path: file.path, size: await file.length());
+  }
+
+  @override
   Future<void> send({
     required String code,
     required List<String> paths,

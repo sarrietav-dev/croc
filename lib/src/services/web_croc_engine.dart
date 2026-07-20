@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js_interop';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
 
 import '../model/transfer_models.dart';
 import 'croc_engine.dart';
@@ -17,7 +19,7 @@ class WebCrocEngine implements CrocEngine {
   );
   final http.Client _client;
   final _events = StreamController<CrocEvent>.broadcast();
-  final Map<String, PlatformFile> _selectedFiles = {};
+  final Map<String, List<_WebFile>> _selectedFiles = {};
   String? _activeTransferId;
 
   @override
@@ -53,10 +55,55 @@ class WebCrocEngine implements CrocEngine {
           }
           final id =
               '${DateTime.now().microsecondsSinceEpoch}-${_selectedFiles.length}';
-          _selectedFiles[id] = file;
+          _selectedFiles[id] = [_WebFile(name: file.name, bytes: file.bytes!)];
           return SelectedFile(name: file.name, path: id, size: file.size);
         })
         .toList(growable: false);
+  }
+
+  @override
+  Future<List<SelectedFile>> pickFolder() async {
+    final input = web.document.createElement('input') as web.HTMLInputElement
+      ..type = 'file'
+      ..multiple = true
+      ..setAttribute('webkitdirectory', '');
+    final files = await _openInput(input);
+    if (files == null || files.length == 0) return const [];
+
+    final picked = <_WebFile>[];
+    for (var index = 0; index < files.length; index++) {
+      final file = files.item(index)!;
+      final buffer = await file.arrayBuffer().toDart;
+      picked.add(
+        _WebFile(
+          name: file.webkitRelativePath.isEmpty
+              ? file.name
+              : file.webkitRelativePath,
+          bytes: buffer.toDart.asUint8List(),
+        ),
+      );
+    }
+    final id = '${DateTime.now().microsecondsSinceEpoch}-folder';
+    _selectedFiles[id] = picked;
+    final rootName = picked.first.name.split('/').first;
+    return [
+      SelectedFile(
+        name: rootName,
+        path: id,
+        size: picked.fold(0, (sum, file) => sum + file.bytes.length),
+      ),
+    ];
+  }
+
+  @override
+  Future<SelectedFile> createTextFile(
+    String text, {
+    required String name,
+  }) async {
+    final bytes = Uint8List.fromList(utf8.encode(text));
+    final id = '${DateTime.now().microsecondsSinceEpoch}-text';
+    _selectedFiles[id] = [_WebFile(name: name, bytes: bytes)];
+    return SelectedFile(name: name, path: id, size: bytes.length);
   }
 
   @override
@@ -72,22 +119,27 @@ class WebCrocEngine implements CrocEngine {
         'relayPorts': relay.ports,
         'relayPassword': relay.password,
       });
+    final relativePaths = <String>[];
     for (final path in paths) {
-      final file = _selectedFiles[path];
-      if (file?.bytes == null) {
+      final files = _selectedFiles[path];
+      if (files == null) {
         throw PlatformException(
           code: 'file-unavailable',
           message: 'A selected file is no longer available. Select it again.',
         );
       }
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'files',
-          file!.bytes!,
-          filename: file.name,
-        ),
-      );
+      for (final file in files) {
+        relativePaths.add(file.name);
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'files',
+            file.bytes,
+            filename: file.name.split('/').last,
+          ),
+        );
+      }
     }
+    request.fields['relativePaths'] = jsonEncode(relativePaths);
     final response = await http.Response.fromStream(
       await _client.send(request),
     );
@@ -188,4 +240,32 @@ class WebCrocEngine implements CrocEngine {
           : response.body.trim(),
     );
   }
+
+  Future<web.FileList?> _openInput(web.HTMLInputElement input) async {
+    final completer = Completer<web.FileList?>();
+    late final StreamSubscription<web.Event> changeSubscription;
+    late final StreamSubscription<web.Event> focusSubscription;
+    changeSubscription = input.onChange.listen((_) {
+      if (!completer.isCompleted) completer.complete(input.files);
+    });
+    focusSubscription = web.EventStreamProvider<web.Event>('focus')
+        .forTarget(web.window)
+        .listen((_) {
+          Timer(const Duration(milliseconds: 300), () {
+            if (!completer.isCompleted) completer.complete(input.files);
+          });
+        });
+    input.click();
+    final result = await completer.future;
+    await changeSubscription.cancel();
+    await focusSubscription.cancel();
+    return result;
+  }
+}
+
+class _WebFile {
+  const _WebFile({required this.name, required this.bytes});
+
+  final String name;
+  final Uint8List bytes;
 }

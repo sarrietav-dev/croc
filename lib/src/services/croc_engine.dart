@@ -26,6 +26,10 @@ abstract interface class CrocEngine {
 
   Future<List<SelectedFile>> pickFiles();
 
+  Future<List<SelectedFile>> pickFolder();
+
+  Future<SelectedFile> createTextFile(String text, {required String name});
+
   Future<bool> saveFile(ReceivedFile file);
 
   Future<void> shareFile(ReceivedFile file);
@@ -94,6 +98,34 @@ class NativeCrocEngine implements CrocEngine {
   }
 
   @override
+  Future<List<SelectedFile>> pickFolder() async {
+    final files =
+        await _control.invokeListMethod<Object?>('pickFolder') ?? const [];
+    return files
+        .cast<Map<Object?, Object?>>()
+        .map(_selectedFileFromMap)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<SelectedFile> createTextFile(
+    String text, {
+    required String name,
+  }) async {
+    final file = await _control.invokeMapMethod<Object?, Object?>(
+      'createTextFile',
+      {'text': text, 'name': name},
+    );
+    if (file == null) {
+      throw PlatformException(
+        code: 'text_file_failed',
+        message: 'Unable to prepare the text for transfer.',
+      );
+    }
+    return _selectedFileFromMap(file);
+  }
+
+  @override
   Future<bool> saveFile(ReceivedFile file) async {
     return await _control.invokeMethod<bool>('saveFile', {
           'path': file.path,
@@ -115,6 +147,12 @@ class NativeCrocEngine implements CrocEngine {
     'relayPorts': relay.ports,
     'relayPassword': relay.password,
   };
+
+  SelectedFile _selectedFileFromMap(Map<Object?, Object?> file) => SelectedFile(
+    name: file['name']! as String,
+    path: file['path']! as String,
+    size: (file['size']! as num).toInt(),
+  );
 }
 
 class CrocEvent {

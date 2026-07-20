@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
+import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import dev.sarrietav.crocbridge.Crocbridge
 import dev.sarrietav.crocbridge.Listener
@@ -26,6 +27,7 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
     private var activeTransfer: Transfer? = null
     private var pendingSave: PendingSave? = null
     private var pendingPick: MethodChannel.Result? = null
+    private var pendingPickFolder = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -47,6 +49,8 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             "saveFile" -> saveFile(call, result)
             "shareFile" -> shareFile(call, result)
             "pickFiles" -> pickFiles(result)
+            "pickFolder" -> pickFolder(result)
+            "createTextFile" -> createTextFile(call, result)
             else -> result.notImplemented()
         }
     }
@@ -57,12 +61,43 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
             return
         }
         pendingPick = result
+        pendingPickFolder = false
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "*/*"
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
         startActivityForResult(intent, PICK_REQUEST_CODE)
+    }
+
+    private fun pickFolder(result: MethodChannel.Result) {
+        if (pendingPick != null) {
+            result.error("picker_busy", "The file picker is already open", null)
+            return
+        }
+        pendingPick = result
+        pendingPickFolder = true
+        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), PICK_REQUEST_CODE)
+    }
+
+    private fun createTextFile(call: MethodCall, result: MethodChannel.Result) {
+        val text = call.argument<String>("text").orEmpty()
+        val requestedName = call.argument<String>("name").orEmpty()
+        val name = requestedName.replace(Regex("[\\/\\u0000]"), "_").ifEmpty { "text.txt" }
+        transferExecutor.execute {
+            try {
+                val directory = File(cacheDir, "croc-text/${System.nanoTime()}").apply { mkdirs() }
+                val file = File(directory, name)
+                file.writeText(text)
+                mainHandler.post {
+                    result.success(mapOf("name" to name, "path" to file.path, "size" to file.length()))
+                }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    result.error("text_file_failed", error.message ?: "Unable to prepare text", null)
+                }
+            }
+        }
     }
 
     private fun saveFile(call: MethodCall, result: MethodChannel.Result) {
@@ -146,9 +181,16 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
 
     private fun finishPicking(resultCode: Int, data: Intent?) {
         val result = pendingPick ?: return
+        val isFolder = pendingPickFolder
         pendingPick = null
+        pendingPickFolder = false
         if (resultCode != Activity.RESULT_OK || data == null) {
             result.success(emptyList<Map<String, Any>>())
+            return
+        }
+
+        if (isFolder) {
+            finishPickingFolder(data.data, result)
             return
         }
 
@@ -159,11 +201,12 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
 
         transferExecutor.execute {
             try {
-                val directory = File(cacheDir, "croc-picked").apply { mkdirs() }
+                val directory = File(cacheDir, "croc-picked/${System.nanoTime()}").apply { mkdirs() }
                 val files = uris.mapIndexed { index, uri ->
                     val displayName = queryDisplayName(uri) ?: "file-${System.currentTimeMillis()}-$index"
                     val safeName = displayName.replace(Regex("[\\/\\u0000]"), "_")
-                    val destination = File(directory, "${System.nanoTime()}-$safeName")
+                    val destinationDirectory = File(directory, index.toString()).apply { mkdirs() }
+                    val destination = File(destinationDirectory, safeName)
                     contentResolver.openInputStream(uri).use { input ->
                         requireNotNull(input) { "Unable to read $displayName" }
                         destination.outputStream().use(input::copyTo)
@@ -177,6 +220,58 @@ class MainActivity : FlutterActivity(), MethodChannel.MethodCallHandler, EventCh
                 }
             }
         }
+    }
+
+    private fun finishPickingFolder(treeUri: Uri?, result: MethodChannel.Result) {
+        if (treeUri == null) {
+            result.success(emptyList<Map<String, Any>>())
+            return
+        }
+        transferExecutor.execute {
+            try {
+                val displayName = queryDisplayName(treeUri) ?: "folder"
+                val safeName = displayName.replace(Regex("[\\/\\u0000]"), "_")
+                val root = File(cacheDir, "croc-picked/${System.nanoTime()}/$safeName").apply { mkdirs() }
+                val documentId = DocumentsContract.getTreeDocumentId(treeUri)
+                copyDocumentTree(treeUri, documentId, root)
+                val size = root.walkTopDown().filter(File::isFile).sumOf(File::length)
+                mainHandler.post {
+                    result.success(listOf(mapOf("name" to displayName, "path" to root.path, "size" to size)))
+                }
+            } catch (error: Exception) {
+                mainHandler.post {
+                    result.error("pick_failed", error.message ?: "Unable to open selected folder", null)
+                }
+            }
+        }
+    }
+
+    private fun copyDocumentTree(treeUri: Uri, parentId: String, destination: File) {
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
+        val projection = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+        )
+        contentResolver.query(childrenUri, projection, null, null, null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val documentId = cursor.getString(0)
+                val displayName = cursor.getString(1) ?: "item"
+                val safeName = displayName.replace(Regex("[\\/\\u0000]"), "_")
+                val mimeType = cursor.getString(2)
+                val target = File(destination, safeName)
+                if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+                    target.mkdirs()
+                    copyDocumentTree(treeUri, documentId, target)
+                } else {
+                    val documentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
+                    contentResolver.openInputStream(documentUri).use { input ->
+                        requireNotNull(input) { "Unable to read $displayName" }
+                        target.outputStream().use(input::copyTo)
+                    }
+                }
+            }
+        } ?: error("Unable to read the selected folder")
     }
 
     private fun queryDisplayName(uri: Uri): String? {

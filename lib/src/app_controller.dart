@@ -81,17 +81,63 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> pickFiles() async {
+    await _pick(_engine.pickFiles);
+  }
+
+  Future<void> pickFolder() async {
+    await _pick(_engine.pickFolder);
+  }
+
+  Future<void> addText(String text) async {
+    if (isBusy || pickingFiles || text.isEmpty) return;
+    await _addPreparedFile(
+      () => _engine.createTextFile(text, name: 'text.txt'),
+    );
+  }
+
+  Future<void> pasteText() async {
+    if (isBusy || pickingFiles) return;
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    if (text == null || text.isEmpty) {
+      _fail('The clipboard does not contain text.');
+      return;
+    }
+    await _addPreparedFile(
+      () => _engine.createTextFile(text, name: 'clipboard.txt'),
+    );
+  }
+
+  Future<void> _pick(Future<List<SelectedFile>> Function() picker) async {
     if (isBusy || pickingFiles) return;
     pickingFiles = true;
     notifyListeners();
     try {
-      final additions = await _engine.pickFiles();
+      final additions = await picker();
       if (additions.isEmpty) return;
       final byPath = {for (final file in selectedFiles) file.path: file};
       for (final file in additions) {
         byPath[file.path] = file;
       }
       selectedFiles = byPath.values.toList(growable: false);
+      status =
+          '${selectedFiles.length} file${selectedFiles.length == 1 ? '' : 's'} selected';
+    } catch (error) {
+      _fail(_messageFor(error));
+    } finally {
+      pickingFiles = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _addPreparedFile(Future<SelectedFile> Function() prepare) async {
+    pickingFiles = true;
+    notifyListeners();
+    try {
+      final file = await prepare();
+      selectedFiles = [
+        ...selectedFiles.where((item) => item.path != file.path),
+        file,
+      ];
       status =
           '${selectedFiles.length} file${selectedFiles.length == 1 ? '' : 's'} selected';
     } catch (error) {

@@ -81,44 +81,56 @@ class _FilePickerCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (files.isEmpty)
-              InkWell(
-                onTap: controller.pickFiles,
-                borderRadius: BorderRadius.circular(16),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  child: Row(
-                    children: [
-                      _PickerIcon(),
-                      SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Choose files',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Select one or several files',
-                              style: TextStyle(
-                                color: CrocColors.muted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.add_rounded, color: CrocColors.forest),
-                    ],
-                  ),
-                ),
-              )
-            else ...[
+            const Text(
+              'Choose what to send',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 3),
+            const Text(
+              'Add files, a folder, or a text message',
+              style: TextStyle(color: CrocColors.muted, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final itemWidth = (constraints.maxWidth - 10) / 2;
+                final enabled = !controller.isBusy && !controller.pickingFiles;
+                return Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _SourceButton(
+                      width: itemWidth,
+                      icon: Icons.insert_drive_file_outlined,
+                      label: 'File',
+                      onPressed: enabled ? controller.pickFiles : null,
+                    ),
+                    _SourceButton(
+                      width: itemWidth,
+                      icon: Icons.folder_outlined,
+                      label: 'Folder',
+                      onPressed: enabled ? controller.pickFolder : null,
+                    ),
+                    _SourceButton(
+                      width: itemWidth,
+                      icon: Icons.notes_rounded,
+                      label: 'Text',
+                      onPressed: enabled
+                          ? () => _showTextDialog(context)
+                          : null,
+                    ),
+                    _SourceButton(
+                      width: itemWidth,
+                      icon: Icons.content_paste_rounded,
+                      label: 'Paste',
+                      onPressed: enabled ? controller.pasteText : null,
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (files.isNotEmpty) ...[
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -126,11 +138,6 @@ class _FilePickerCard extends StatelessWidget {
                       '${files.length} selected · ${formatBytes(controller.selectedBytes)}',
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Add files',
-                    onPressed: controller.isBusy ? null : controller.pickFiles,
-                    icon: const Icon(Icons.add_rounded),
                   ),
                 ],
               ),
@@ -144,21 +151,86 @@ class _FilePickerCard extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _showTextDialog(BuildContext context) async {
+    final text = await showDialog<String>(
+      context: context,
+      builder: (context) => const _TextDialog(),
+    );
+    if (text != null && text.isNotEmpty) await controller.addText(text);
+  }
 }
 
-class _PickerIcon extends StatelessWidget {
-  const _PickerIcon();
+class _TextDialog extends StatefulWidget {
+  const _TextDialog();
+
+  @override
+  State<_TextDialog> createState() => _TextDialogState();
+}
+
+class _TextDialogState extends State<_TextDialog> {
+  final textController = TextEditingController();
+
+  @override
+  void dispose() {
+    textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F0E9),
-        borderRadius: BorderRadius.circular(13),
+    return AlertDialog(
+      title: const Text('Send text'),
+      content: TextField(
+        controller: textController,
+        autofocus: true,
+        minLines: 5,
+        maxLines: 12,
+        decoration: const InputDecoration(
+          hintText: 'Type or paste your message',
+          border: OutlineInputBorder(),
+        ),
       ),
-      child: const Icon(Icons.attach_file_rounded, size: 21),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, textController.text),
+          child: const Text('Add text'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SourceButton extends StatelessWidget {
+  const _SourceButton({
+    required this.width,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final double width;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+        ),
+      ),
     );
   }
 }

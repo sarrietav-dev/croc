@@ -104,7 +104,16 @@ func (s *Server) startSend(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	var relativePaths []string
+	if encoded := r.FormValue("relativePaths"); encoded != "" {
+		if err := json.Unmarshal([]byte(encoded), &relativePaths); err != nil || len(relativePaths) != len(files) {
+			s.failAndRemove(sess)
+			http.Error(w, "invalid relative file paths", http.StatusBadRequest)
+			return
+		}
+	}
 	paths := make([]string, 0, len(files))
+	seenPaths := make(map[string]bool)
 	for index, header := range files {
 		source, openErr := header.Open()
 		if openErr != nil {
@@ -117,14 +126,42 @@ func (s *Server) startSend(w http.ResponseWriter, r *http.Request) {
 			name = "file"
 		}
 		uploadDirectory := filepath.Join(sess.directory, "uploads", strconv.Itoa(index))
+		transferPath := filepath.Join(uploadDirectory, name)
+		if len(relativePaths) != 0 {
+			parts := strings.Split(strings.ReplaceAll(relativePaths[index], "\\", "/"), "/")
+			valid := len(parts) != 0
+			for _, part := range parts {
+				if part == "" || part == "." || part == ".." || filepath.Base(part) != part {
+					valid = false
+					break
+				}
+			}
+			if !valid {
+				_ = source.Close()
+				s.failAndRemove(sess)
+				http.Error(w, "invalid relative file path", http.StatusBadRequest)
+				return
+			}
+			if len(parts) > 1 {
+				transferPath = filepath.Join(append([]string{sess.directory, "uploads"}, parts...)...)
+				uploadDirectory = filepath.Dir(transferPath)
+				root := filepath.Join(sess.directory, "uploads", parts[0])
+				if !seenPaths[root] {
+					paths = append(paths, root)
+					seenPaths[root] = true
+				}
+			} else if !seenPaths[transferPath] {
+				paths = append(paths, transferPath)
+				seenPaths[transferPath] = true
+			}
+		}
 		if createErr := os.MkdirAll(uploadDirectory, 0o700); createErr != nil {
 			_ = source.Close()
 			s.failAndRemove(sess)
 			http.Error(w, "store uploaded file", http.StatusInternalServerError)
 			return
 		}
-		path := filepath.Join(uploadDirectory, name)
-		target, createErr := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		target, createErr := os.OpenFile(transferPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 		if createErr == nil {
 			_, createErr = io.Copy(target, source)
 			createErr = errors.Join(createErr, target.Close())
@@ -135,7 +172,9 @@ func (s *Server) startSend(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "store uploaded file", http.StatusInternalServerError)
 			return
 		}
-		paths = append(paths, path)
+		if len(relativePaths) == 0 {
+			paths = append(paths, transferPath)
+		}
 	}
 
 	encodedPaths, _ := json.Marshal(paths)
