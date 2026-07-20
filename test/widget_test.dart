@@ -4,6 +4,7 @@ import 'package:croc/src/app_controller.dart';
 import 'package:croc/src/model/transfer_models.dart';
 import 'package:croc/src/services/croc_engine.dart';
 import 'package:croc/src/ui/croc_app.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +16,7 @@ void main() {
   });
 
   testWidgets('moves between the primary transfer flows', (tester) async {
+    setTestWindowSize(tester, const Size(560, 900));
     final controller = AppController(engine: FakeCrocEngine());
     await controller.initialize();
 
@@ -34,6 +36,7 @@ void main() {
   testWidgets('shows a QR code for the generated transfer code', (
     tester,
   ) async {
+    setTestWindowSize(tester, const Size(560, 900));
     final controller = AppController(engine: FakeCrocEngine());
     await controller.initialize();
 
@@ -48,6 +51,29 @@ void main() {
       find.bySemanticsLabel('QR code for quiet-forest-river'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('adapts navigation and workspace across window sizes', (
+    tester,
+  ) async {
+    final controller = AppController(engine: FakeCrocEngine());
+    await controller.initialize();
+
+    setTestWindowSize(tester, const Size(560, 900));
+    await tester.pumpWidget(CrocApp(controller: controller));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(const Key('desktop-navigation')), findsNothing);
+
+    tester.view.physicalSize = const Size(900, 720);
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byKey(const Key('desktop-navigation')), findsOneWidget);
+    expect(find.byKey(const Key('send-workspace-wide')), findsNothing);
+
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('send-workspace-wide')), findsOneWidget);
   });
 
   test('decodes progress events from the native bridge', () {
@@ -68,6 +94,13 @@ void main() {
     expect(formatBytes(1536), '1.50 KB');
     expect(formatBytes(5 * 1024 * 1024), '5.00 MB');
   });
+}
+
+void setTestWindowSize(WidgetTester tester, Size size) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
 }
 
 class FakeCrocEngine implements CrocEngine {

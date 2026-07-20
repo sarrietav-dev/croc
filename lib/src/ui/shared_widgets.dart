@@ -346,7 +346,7 @@ class PrivacyNote extends StatelessWidget {
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'The relay connects both devices, but your files are encrypted before they leave this phone.',
+              'The relay connects both devices, but your files are encrypted before they leave this device.',
               style: TextStyle(
                 color: CrocColors.forest,
                 fontSize: 13,

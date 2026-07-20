@@ -16,36 +16,73 @@ class ReceiveView extends StatelessWidget {
       eyebrow: 'Secure transfer',
       title: 'Receive files',
       description: 'Enter the code from the sending device.',
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final controls = Column(
             children: [
               CodeCard(controller: controller, receiveMode: true),
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: controller.isBusy || controller.code.length < 6
-                      ? null
-                      : controller.startReceive,
-                  icon: const Icon(Icons.south_west_rounded),
-                  label: Text(
-                    controller.isBusy
-                        ? 'Transfer in progress'
-                        : 'Receive securely',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
+              _ReceiveAction(controller: controller),
+            ],
+          );
+          final feedback = Column(
+            children: [
               TransferPanel(controller: controller),
               if (controller.receivedFiles.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 _ReceivedFiles(controller: controller),
               ],
             ],
-          ),
+          );
+
+          if (constraints.maxWidth >= 820) {
+            return Row(
+              key: const Key('receive-workspace-wide'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 5, child: controls),
+                const SizedBox(width: 20),
+                Expanded(
+                  flex: 6,
+                  child: controller.phase == TransferPhase.idle
+                      ? const PrivacyNote()
+                      : feedback,
+                ),
+              ],
+            );
+          }
+
+          return Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                children: [controls, const SizedBox(height: 14), feedback],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ReceiveAction extends StatelessWidget {
+  const _ReceiveAction({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: controller.isBusy || controller.code.length < 6
+            ? null
+            : controller.startReceive,
+        icon: const Icon(Icons.south_west_rounded),
+        label: Text(
+          controller.isBusy ? 'Transfer in progress' : 'Receive securely',
         ),
       ),
     );

@@ -16,22 +16,52 @@ class SendView extends StatelessWidget {
       eyebrow: 'Secure transfer',
       title: 'Send files',
       description: 'Select files and share the one-time code.',
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: Column(
-            children: [
-              _FilePickerCard(controller: controller),
-              const SizedBox(height: 14),
-              CodeCard(controller: controller, receiveMode: false),
-              const SizedBox(height: 14),
-              _SendAction(controller: controller),
-              const SizedBox(height: 14),
-              TransferPanel(controller: controller),
-            ],
-          ),
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 820) {
+            return Row(
+              key: const Key('send-workspace-wide'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 6,
+                  child: _FilePickerCard(controller: controller),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    children: [
+                      CodeCard(controller: controller, receiveMode: false),
+                      const SizedBox(height: 14),
+                      _SendAction(controller: controller),
+                      const SizedBox(height: 14),
+                      TransferPanel(controller: controller),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                children: [
+                  _FilePickerCard(controller: controller),
+                  const SizedBox(height: 14),
+                  CodeCard(controller: controller, receiveMode: false),
+                  const SizedBox(height: 14),
+                  _SendAction(controller: controller),
+                  const SizedBox(height: 14),
+                  TransferPanel(controller: controller),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

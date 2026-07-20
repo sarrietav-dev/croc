@@ -33,7 +33,8 @@ class HomeShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final desktop = width >= 900;
+    final desktop = width >= 720;
+    final compactNavigation = width < 1100;
     final content = IndexedStack(
       index: controller.destination,
       children: [
@@ -47,7 +48,11 @@ class HomeShell extends StatelessWidget {
       return Scaffold(
         body: Row(
           children: [
-            _DesktopNavigation(controller: controller),
+            _DesktopNavigation(
+              key: const Key('desktop-navigation'),
+              controller: controller,
+              compact: compactNavigation,
+            ),
             Expanded(child: content),
           ],
         ),
@@ -91,32 +96,47 @@ class HomeShell extends StatelessWidget {
 }
 
 class _DesktopNavigation extends StatelessWidget {
-  const _DesktopNavigation({required this.controller});
+  const _DesktopNavigation({
+    super.key,
+    required this.controller,
+    required this.compact,
+  });
 
   final AppController controller;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 248,
+      width: compact ? 88 : 248,
       color: CrocColors.forest,
-      padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 14 : 22,
+        28,
+        compact ? 14 : 22,
+        24,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Row(
+          Row(
+            mainAxisAlignment: compact
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
-              CrocMark(size: 44, inverted: true),
-              SizedBox(width: 14),
-              Text(
-                'croc',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1,
+              const CrocMark(size: 44, inverted: true),
+              if (!compact) ...[
+                const SizedBox(width: 14),
+                const Text(
+                  'croc',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 48),
@@ -124,6 +144,7 @@ class _DesktopNavigation extends StatelessWidget {
             selected: controller.destination == 0,
             icon: Icons.north_east_rounded,
             label: 'Send files',
+            compact: compact,
             onTap: () => controller.setDestination(0),
           ),
           const SizedBox(height: 8),
@@ -131,6 +152,7 @@ class _DesktopNavigation extends StatelessWidget {
             selected: controller.destination == 1,
             icon: Icons.south_west_rounded,
             label: 'Receive files',
+            compact: compact,
             onTap: () => controller.setDestination(1),
           ),
           const SizedBox(height: 8),
@@ -138,19 +160,22 @@ class _DesktopNavigation extends StatelessWidget {
             selected: controller.destination == 2,
             icon: Icons.tune_rounded,
             label: 'Settings',
+            compact: compact,
             onTap: () => controller.setDestination(2),
           ),
           const Spacer(),
-          const _SecureBadge(),
-          const SizedBox(height: 16),
-          const Text(
-            'Your files stay encrypted from this device to the other one.',
-            style: TextStyle(
-              color: Color(0xFFAFC4B9),
-              fontSize: 12,
-              height: 1.5,
+          _SecureBadge(compact: compact),
+          if (!compact) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Your files stay encrypted from this device to the other one.',
+              style: TextStyle(
+                color: Color(0xFFAFC4B9),
+                fontSize: 12,
+                height: 1.5,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -162,40 +187,57 @@ class _RailItem extends StatelessWidget {
     required this.selected,
     required this.icon,
     required this.label,
+    required this.compact,
     required this.onTap,
   });
 
   final bool selected;
   final IconData icon;
   final String label;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? CrocColors.lime : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
+    return Tooltip(
+      message: compact ? label : '',
+      child: Material(
+        color: selected ? CrocColors.lime : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: selected ? CrocColors.forest : Colors.white,
-                size: 21,
-              ),
-              const SizedBox(width: 13),
-              Text(
-                label,
-                style: TextStyle(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 10 : 15,
+              vertical: 14,
+            ),
+            child: Row(
+              mainAxisAlignment: compact
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: [
+                Icon(
+                  icon,
                   color: selected ? CrocColors.forest : Colors.white,
-                  fontWeight: FontWeight.w700,
+                  size: 21,
                 ),
-              ),
-            ],
+                if (!compact) ...[
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: selected ? CrocColors.forest : Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -226,12 +268,16 @@ class _SecureBadge extends StatelessWidget {
           ),
           if (!compact) ...[
             const SizedBox(width: 7),
-            const Text(
-              'End-to-end encrypted',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+            const Flexible(
+              child: Text(
+                'End-to-end encrypted',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
