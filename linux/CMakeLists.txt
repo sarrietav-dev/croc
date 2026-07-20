@@ -57,6 +57,28 @@ pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+# Build the pinned Go Croc engine used by the desktop process bridge.
+find_program(GO_EXECUTABLE go REQUIRED)
+set(CROC_BRIDGE_DIR "${CMAKE_SOURCE_DIR}/../native/crocbridge")
+set(CROC_HELPER "${CMAKE_BINARY_DIR}/crocbridge-helper")
+file(GLOB_RECURSE CROC_BRIDGE_SOURCES CONFIGURE_DEPENDS
+  "${CROC_BRIDGE_DIR}/*.go"
+  "${CROC_BRIDGE_DIR}/go.mod"
+  "${CROC_BRIDGE_DIR}/go.sum"
+)
+add_custom_command(
+  OUTPUT "${CROC_HELPER}"
+  COMMAND ${CMAKE_COMMAND} -E env
+    "CGO_ENABLED=0" "GOOS=linux" "GOARCH=amd64"
+    "${GO_EXECUTABLE}" build -trimpath -ldflags=-s\ -w
+    -o "${CROC_HELPER}" ./cmd/crocbridge-helper
+  DEPENDS ${CROC_BRIDGE_SOURCES}
+  WORKING_DIRECTORY "${CROC_BRIDGE_DIR}"
+  VERBATIM
+)
+add_custom_target(crocbridge_helper ALL DEPENDS "${CROC_HELPER}")
+add_dependencies(${BINARY_NAME} crocbridge_helper)
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
 
@@ -93,6 +115,7 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
+install(PROGRAMS "${CROC_HELPER}" DESTINATION "." COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
