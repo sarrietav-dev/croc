@@ -1,0 +1,14 @@
+A Flutter client for croc on Android, Linux, Windows, and the web. Native apps embed the official Go transfer engine. The browser uses the included Go web bridge because browsers cannot connect to Croc's TCP relay directly. Transfers remain fully interoperable with Croc CLI.
+
+Features:
+- Flexible sending — send files, complete folders, typed text, or clipboard content
+- Receive files — enter a code to receive from Croc CLI or another client
+- Progress & cancellation — real-time transfer progress with cooperative cancel
+- QR transfer codes — show a scannable code or scan one with the Android camera
+- Native Android UX — document picker, save dialog, and share sheet
+- Desktop transfers — send and receive encrypted files on Linux and Windows without installing Croc CLI
+- Web transfers — upload, send, receive, cancel, and download through a self-hosted Croc bridge
+- Custom relay — configure relay address, ports, and password
+- Adaptive layout — bottom navigation on phones, compact navigation in small windows, and a two-column workspace on wide Linux and Windows windows
+
+Received files are staged in app-private cache storage. Android's Storage Access Framework is used to save copies elsewhere, so the app does not request broad storage permissions.
