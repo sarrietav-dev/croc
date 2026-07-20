@@ -1,15 +1,27 @@
-# Croc Mobile
+<p align="center">
+  <img src="screenshots/send_view.png" width="240" alt="Send view">
+  <img src="screenshots/receive_view.png" width="240" alt="Receive view">
+  <img src="screenshots/settings_view.png" width="240" alt="Settings view">
+</p>
 
-An Android-first Flutter client for [croc](https://github.com/schollz/croc). It embeds the official Go transfer engine, so transfers remain interoperable with Croc CLI and use Croc's end-to-end encrypted PAKE protocol.
+# Croc
+
+An Android-first Flutter client for [croc](https://github.com/schollz/croc). It embeds the official Go transfer engine, so transfers are fully interoperable with Croc CLI and use Croc's end-to-end encrypted PAKE protocol.
 
 ## Features
 
-- Send one or several files with a generated or custom code
-- Receive files from Croc CLI or another compatible client
-- Transfer progress and cooperative cancellation
-- Native Android document picker, save dialog, and share sheet
-- Configurable relay address, ports, and password
-- Responsive phone and desktop-sized layouts
+- **Send files** — pick one or several files and share the one-time code
+- **Receive files** — enter a code to receive from Croc CLI or another client
+- **Progress & cancellation** — real-time transfer progress with cooperative cancel
+- **Native Android UX** — document picker, save dialog, and share sheet
+- **Custom relay** — configure relay address, ports, and password
+- **Minimal UI** — clean, responsive layout for phone and tablet
+
+## Screenshots
+
+| Send | Receive | Settings |
+|------|---------|----------|
+| ![Send](screenshots/send_view.png) | ![Receive](screenshots/receive_view.png) | ![Settings](screenshots/settings_view.png) |
 
 ## Architecture
 
