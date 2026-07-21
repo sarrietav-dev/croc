@@ -3,7 +3,6 @@ pkgbase = croc-gui
 	pkgver = 1.0.0
 	pkgrel = 1
 	url = https://github.com/sarrietav-dev/croc
-	install = 
 	arch = x86_64
 	license = MIT
 	makedepends = flutter

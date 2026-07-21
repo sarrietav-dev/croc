@@ -20,6 +20,18 @@ A Flutter client for [croc](https://github.com/schollz/croc) on Android, Linux, 
 - **Custom relay** — configure relay address, ports, and password
 - **Adaptive layout** - bottom navigation on phones, compact navigation in small windows, and a two-column workspace on wide Linux and Windows windows
 
+## Install
+
+### Arch Linux
+
+```
+yay -S croc-gui
+```
+
+### Build from source
+
+See the [Build](#build) section below.
+
 ## Screenshots
 
 ### Mobile
