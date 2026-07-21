@@ -1,0 +1,9 @@
+Initial release: encrypted Croc file transfers on Android
+- Flexible sending — send files, folders, text, or clipboard
+- Receive files — enter a code to receive from any Croc client
+- Real-time transfer progress with cooperative cancel
+- QR transfer codes — show or scan with Android camera
+- Native Android UX — document picker, save dialog, share sheet
+- Desktop transfers on Linux and Windows without Croc CLI
+- Web transfers through a self-hosted Croc bridge
+- Custom relay configuration
